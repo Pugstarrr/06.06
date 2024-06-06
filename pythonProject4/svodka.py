@@ -218,43 +218,66 @@ def get_problem(connection, client_id):
     else:
         return "Проблема не найдена"
 
-def generate_pdf(selected_client_text, selected_parts_listbox):
-    text_data = selected_client_text.get("1.0", "end").strip()
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+import tkinter as tk
+from tkinter import messagebox
+import os
+from datetime import datetime
+
+
+def generate_pdf(selected_client_text , selected_parts_listbox):
+    text_data = selected_client_text.get ( "1.0" , "end" ).strip ()
     if text_data[21] != 'П':
-        file_name = "order.pdf"
-        c = canvas.Canvas(file_name, pagesize=A4)
-        width, height = A4
+        # Измените путь на рабочий стол пользователя
+        desktop_path = os.path.join ( os.path.join ( os.environ['USERPROFILE'] ) , 'Desktop' )
 
-        # Add title
-        c.setFont("Helvetica-Bold", 20)
-        c.drawString(50, height - 50, "Заказ на ремонт автомобиля")
+        # Создайте уникальное имя файла, используя временную метку
+        timestamp = datetime.now ().strftime ( "%Y%m%d_%H%M%S" )
+        file_name = os.path.join ( desktop_path , f"order_{timestamp}.pdf" )
 
-        # Add client info
-        c.setFont("Helvetica", 14)
-        client_info = selected_client_text.get("1.0", "end-1c")
-        c.drawString(50, height - 100, client_info)
+        c = canvas.Canvas ( file_name , pagesize=A4 )
 
-        # Add parts info
-        parts_info = selected_parts_listbox.get(0, "end")
-        y_position = height - 150
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, y_position, "Выбранные детали:")
+        # Регистрация шрифта DejaVuSans
+        pdfmetrics.registerFont ( TTFont ( 'DejaVuSans' , 'DejaVuSans.ttf' ) )
+        c.setFont ( "DejaVuSans" , 20 )
+
+        width , height = A4
+
+        # Добавление заголовка
+        c.drawString ( 50 , height - 50 , "Заказ на ремонт автомобиля" )
+
+        # Добавление информации о клиенте
+        c.setFont ( "DejaVuSans" , 14 )
+        client_info = selected_client_text.get ( "1.0" , "end-1c" )
+        y_position = height - 100
+        for line in client_info.split ( '\n' ):
+            c.drawString ( 50 , y_position , line )
+            y_position -= 20
+
+        # Добавление информации о деталях
+        parts_info = selected_parts_listbox.get ( 0 , "end" )
         y_position -= 20
-        c.setFont("Helvetica", 12)
+        c.setFont ( "DejaVuSans" , 16 )
+        c.drawString ( 50 , y_position , "Выбранные детали:" )
+        y_position -= 20
+        c.setFont ( "DejaVuSans" , 12 )
         for part in parts_info:
-            c.drawString(50, y_position, part)
+            c.drawString ( 50 , y_position , part )
             y_position -= 15
 
-        # Add total cost
-        total_cost = sum(int(detail.split(", ")[-1]) for detail in parts_info)
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(50, y_position - 20, f"Общая стоимость: {total_cost} руб.")
+        # Добавление общей стоимости
+        total_cost = sum ( int ( detail.split ( ", " )[-1] ) for detail in parts_info )
+        c.setFont ( "DejaVuSans" , 14 )
+        c.drawString ( 50 , y_position - 20 , f"Общая стоимость: {total_cost} руб." )
 
-        c.save()
-        messagebox.showinfo("Успех", f"Заказ сохранен в {file_name}")
+        c.save ()
+        messagebox.showinfo ( "Успех" , f"Заказ сохранен в {file_name}" )
     else:
-        messagebox.showwarning("Ошибка", "Сначало необходимо выбрать клиента")
-
+        messagebox.showwarning ( "Ошибка" , "Сначала необходимо выбрать клиента" )
 def open_order_window(selected_client_text, selected_parts_listbox):
     text_data = selected_client_text.get("1.0", "end")
     if text_data[21] != 'П':
